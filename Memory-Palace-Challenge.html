@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Memory Palace Challenge</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; background: #fffaf0; padding: 20px; }
+    h2 { margin-bottom: 10px; }
+    button { padding: 12px 20px; margin: 10px; font-size: 16px; cursor: pointer; border-radius: 8px; }
+    .room-btn { background-color: #d3eaf2; border: none; }
+    .room-btn:hover { background-color: #a3d3e2; }
+    #feedback { margin-top: 20px; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+<h2>🎮 Game 2: Memory Palace Challenge</h2>
+
+<div id="game">
+  <div id="setup">
+    <p><strong>Assign each task to a room in your memory palace (your home).</strong></p>
+    <div id="taskArea"></div>
+    <div id="roomOptions">
+      <button class="room-btn" onclick="assignRoom('Bedroom')">🛏 Bedroom</button>
+      <button class="room-btn" onclick="assignRoom('Kitchen')">🍳 Kitchen</button>
+      <button class="room-btn" onclick="assignRoom('Front Door')">🚪 Front Door</button>
+      <button class="room-btn" onclick="assignRoom('Work Desk')">🪑 Work Desk</button>
+      <button class="room-btn" onclick="assignRoom('Bathroom')">🛁 Bathroom</button>
+    </div>
+    <p id="tip"></p>
+  </div>
+
+  <div id="recall" style="display:none;">
+    <p><strong>Where did you place this task?</strong></p>
+    <h3 id="recallTask"></h3>
+    <div id="recallOptions"></div>
+    <div id="feedback"></div>
+  </div>
+
+  <div id="result" style="display:none;">
+    <h3>🎉 Game Over</h3>
+    <p id="score"></p>
+    <button onclick="location.reload()">🔁 Retry Game</button>
+  </div>
+</div>
+
+<script>
+const tasks = [
+  "File Annual Budget", "Submit Monthly Memo", "Log Travel Request", "Approve Vendor Form", "Schedule Review Call",
+  "Email Q2 Strategy", "Resend Invoice", "Draft Meeting Agenda", "Print Quarterly Report", "Flag Compliance Risk"
+];
+
+const tips = {
+  "File Annual Budget": {
+    "Bedroom": "You open your pillowcase and budget reports spill out.",
+    "Kitchen": "You bake a pie filled with printed spreadsheets.",
+    "Front Door": "A suitcase of budget papers is taped to your door.",
+    "Work Desk": "Budget folders are stacked like bricks on your keyboard.",
+    "Bathroom": "You unroll a financial chart from the toilet paper holder."
+  },
+  "Submit Monthly Memo": {
+    "Bedroom": "Your bedsheet is covered in printed memos.",
+    "Kitchen": "You find the memo inside a cereal box.",
+    "Front Door": "A flying memo slips through the door like mail.",
+    "Work Desk": "You type the memo on your keyboard, but it vanishes after 60 seconds.",
+    "Bathroom": "You write the memo on the mirror in fog, but it disappears unless read fast."
+  },
+  "Log Travel Request": {
+    "Bedroom": "Your passport is stuck between your pillows.",
+    "Kitchen": "The blender grinds up a boarding pass.",
+    "Front Door": "A travel bag blocks the doorway and asks for approval.",
+    "Work Desk": "A flight itinerary prints nonstop from your desk drawer.",
+    "Bathroom": "You brush your teeth with a toothbrush that prints tickets."
+  },
+  "Approve Vendor Form": {
+    "Bedroom": "Forms are pinned to your blanket like patches.",
+    "Kitchen": "You stir vendor documents into a soup.",
+    "Front Door": "A vendor holds up a form at your door and won’t leave.",
+    "Work Desk": "The form is rubber-stamped by a robotic desk arm.",
+    "Bathroom": "A vending machine in the shower dispenses forms with red stamps."
+  },
+  "Schedule Review Call": {
+    "Bedroom": "Alarm clocks ring with meeting reminders under your bed.",
+    "Kitchen": "You time your call by boiling eggs.",
+    "Front Door": "A phone call starts automatically as you step outside.",
+    "Work Desk": "Sticky notes fly off your monitor with review times.",
+    "Bathroom": "Your reflection shouts out review timings in the mirror."
+  },
+  "Email Q2 Strategy": {
+    "Bedroom": "You dream you're CC'd on a company-wide email.",
+    "Kitchen": "You write the email on a cake with icing.",
+    "Front Door": "You find a USB drive taped to the door with Q2 plans.",
+    "Work Desk": "The email types itself when you whisper to the screen.",
+    "Bathroom": "A Q2 pie chart appears as shampoo swirls down the drain."
+  },
+  "Resend Invoice": {
+    "Bedroom": "Invoices are stacked in your dresser like socks.",
+    "Kitchen": "You toast an invoice in the toaster and hand it off.",
+    "Front Door": "A courier grabs invoices from your mailbox slot.",
+    "Work Desk": "A paper tray shoots out invoices each time you blink.",
+    "Bathroom": "You find floating invoices in the bathtub water."
+  },
+  "Draft Meeting Agenda": {
+    "Bedroom": "Your mattress is printed with an agenda layout.",
+    "Kitchen": "You stir letters into a pot that spell out the agenda.",
+    "Front Door": "The doormat shows a schedule when stepped on.",
+    "Work Desk": "You write the agenda on a whiteboard that's your desk.",
+    "Bathroom": "You shower under a flow of bullet points."
+  },
+  "Print Quarterly Report": {
+    "Bedroom": "You yank quarterly reports from under your bed.",
+    "Kitchen": "They come out of the fridge like cold paper stacks.",
+    "Front Door": "You collect printed sheets floating at the doorway.",
+    "Work Desk": "Your mouse scrolls through and prints automatically.",
+    "Bathroom": "Reports roll out from behind the shower curtain."
+  },
+  "Flag Compliance Risk": {
+    "Bedroom": "Red flags dangle from your ceiling fan.",
+    "Kitchen": "The oven explodes with red flags and sirens.",
+    "Front Door": "There's a caution sign on your front door — “Non-Compliant Area.”",
+    "Work Desk": "A warning message flashes on your monitor nonstop.",
+    "Bathroom": "Red lights blink above the mirror with “COMPLIANCE RISK” in steam."
+  }
+};
+
+const rooms = ["Bedroom", "Kitchen", "Front Door", "Work Desk", "Bathroom"];
+let taskRoomMap = {};
+let currentTaskIndex = 0;
+let recallIndex = 0;
+let recallOrder = [];
+let score = 0;
+
+function displayNextTask() {
+  if (currentTaskIndex >= tasks.length) {
+    document.getElementById('setup').style.display = 'none';
+    startRecall();
+    return;
+  }
+  const task = tasks[currentTaskIndex];
+  document.getElementById('taskArea').innerHTML = `<h3>Task: ${task}</h3>`;
+  document.getElementById('tip').innerText = "";
+}
+
+function assignRoom(room) {
+  const task = tasks[currentTaskIndex];
+  taskRoomMap[task] = room;
+  const visual = tips[task]?.[room];
+  document.getElementById('tip').innerText = visual;
+  currentTaskIndex++;
+  setTimeout(displayNextTask, 2400);
+}
+
+function startRecall() {
+  document.getElementById('recall').style.display = 'block';
+  recallOrder = shuffle([...tasks]);
+  showRecallQuestion();
+}
+
+function showRecallQuestion() {
+  if (recallIndex >= recallOrder.length) {
+    document.getElementById('recall').style.display = 'none';
+    document.getElementById('result').style.display = 'block';
+    document.getElementById('score').innerText = `You remembered ${score} out of ${tasks.length} tasks correctly.`;
+    return;
+  }
+  const task = recallOrder[recallIndex];
+  document.getElementById('recallTask').innerText = task;
+  const correctRoom = taskRoomMap[task];
+  const options = shuffle([correctRoom, ...rooms.filter(r => r !== correctRoom).slice(0, 3)]);
+  const buttons = options.map(room => `<button class="room-btn" onclick="checkAnswer('${room}')">${room}</button>`).join("");
+  document.getElementById('recallOptions').innerHTML = buttons;
+  document.getElementById('feedback').innerText = "";
+}
+
+function checkAnswer(selected) {
+  const task = recallOrder[recallIndex];
+  const correct = taskRoomMap[task];
+  if (selected === correct) {
+    score++;
+    document.getElementById('feedback').innerText = "✅ Correct!";
+  } else {
+    document.getElementById('feedback').innerText = `❌ Wrong! You placed it in the ${correct}.`;
+  }
+  recallIndex++;
+  setTimeout(showRecallQuestion, 1500);
+}
+
+function shuffle(arr) {
+  return arr.sort(() => Math.random() - 0.5);
+}
+
+displayNextTask();
+</script>
+
+</body>
+</html>
