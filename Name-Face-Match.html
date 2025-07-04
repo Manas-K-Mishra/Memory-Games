@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Name-Face Matchmaker - Hard Mode</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; background: #f0f8ff; padding: 20px; }
+    img { width: 130px; height: 130px; border-radius: 10px; margin: 10px; border: 2px solid #ccc; }
+    .option { display: inline-block; margin: 10px; padding: 10px 16px; background: #e0f7fa; border-radius: 8px; cursor: pointer; font-weight: bold; }
+    .option:hover { background-color: #b2ebf2; }
+    #feedback { font-size: 18px; font-weight: bold; margin-top: 20px; }
+    #timer, #score { font-size: 16px; margin-bottom: 10px; }
+    #badge { font-size: 24px; color: green; margin-top: 20px; }
+    button { padding: 10px 20px; font-size: 16px; margin-top: 20px; cursor: pointer; }
+    .face-container { display: inline-block; width: 140px; vertical-align: top; }
+  </style>
+</head>
+<body>
+
+<h2>🧠 Name-Face Matchmaker – Challenge Mode</h2>
+
+<div id="game">
+  <div id="preview">
+    <p><strong>Preview the faces and memory hooks (Try to remember them!):</strong></p>
+    <div id="previewFaces"></div>
+    <button onclick="startGame()">I’m Ready!</button>
+  </div>
+
+  <div id="question" style="display:none;">
+    <div id="timer">Time: 0s</div>
+    <div id="score">Score: 0 / 0</div>
+    <p><strong>Who is this?</strong></p>
+    <img id="quizImage" src="">
+    <div id="options"></div>
+    <div id="feedback"></div>
+  </div>
+
+  <div id="endScreen" style="display:none;">
+    <h3>🎉 You finished the game!</h3>
+    <p id="finalStats"></p>
+    <div id="badge" style="display:none;">🏅 Memory Master! You matched all names correctly!</div>
+    <button onclick="restartGame()">🔁 Retry Game</button>
+  </div>
+</div>
+
+<script>
+const faces = [
+  { name: "Cliff", img: "https://api.dicebear.com/7.x/adventurer/svg?seed=Cliff", hook: "Serious face → 'Cliff = stiff'" },
+  { name: "Ivy", img: "https://api.dicebear.com/7.x/adventurer/svg?seed=Ivy", hook: "Tilted smile → 'Ivy vines curve'" },
+  { name: "Theo", img: "https://api.dicebear.com/7.x/adventurer/svg?seed=Theo", hook: "Neutral look → 'Theo = thinker'" },
+  { name: "Lana", img: "https://api.dicebear.com/7.x/adventurer/svg?seed=Lana", hook: "Round face → 'Lana = Luna'" },
+  { name: "Felix", img: "https://api.dicebear.com/7.x/adventurer/svg?seed=Felix", hook: "Raised brows → 'Felix the curious cat'" },
+  { name: "Zara", img: "https://api.dicebear.com/7.x/adventurer/svg?seed=Zara", hook: "Long face → 'Zara = Zebra elegance'" },
+  { name: "Joel", img: "https://api.dicebear.com/7.x/adventurer/svg?seed=Joel", hook: "Narrow eyes → 'Joel is focused'" },
+  { name: "Mira", img: "https://api.dicebear.com/7.x/adventurer/svg?seed=Mira", hook: "Straight hair → 'Mira = Mirror'" },
+  { name: "Rehan", img: "https://api.dicebear.com/7.x/adventurer/svg?seed=Rehan", hook: "Beard → 'Rehan = Rugged Reliable'" },
+  { name: "Tessa", img: "https://api.dicebear.com/7.x/adventurer/svg?seed=Tessa", hook: "Sharp nose → 'Tessellate = Tessa'" }
+];
+
+let current = {};
+let used = [];
+let score = 0;
+let total = 0;
+let timer = 0;
+let timerInterval;
+
+window.onload = () => {
+  const preview = document.getElementById('previewFaces');
+  faces.forEach(f => {
+    preview.innerHTML += `
+      <div class="face-container">
+        <img src="${f.img}" alt="${f.name}">
+        <p><strong>${f.name}</strong><br><small>${f.hook}</small></p>
+      </div>`;
+  });
+};
+
+function startGame() {
+  document.getElementById('preview').style.display = 'none';
+  document.getElementById('question').style.display = 'block';
+  document.getElementById('endScreen').style.display = 'none';
+  document.getElementById('score').innerText = `Score: 0 / 0`;
+  score = 0; total = 0; used = [];
+  startTimer();
+  showQuestion();
+}
+
+function restartGame() {
+  document.getElementById('endScreen').style.display = 'none';
+  document.getElementById('preview').style.display = 'block';
+  document.getElementById('badge').style.display = 'none';
+  document.getElementById('previewFaces').innerHTML = '';
+  window.onload();
+}
+
+function startTimer() {
+  timer = 0;
+  document.getElementById('timer').innerText = `Time: 0s`;
+  timerInterval = setInterval(() => {
+    timer++;
+    document.getElementById('timer').innerText = `Time: ${timer}s`;
+  }, 1000);
+}
+
+function stopTimer() {
+  clearInterval(timerInterval);
+}
+
+function showQuestion() {
+  if (used.length === faces.length) {
+    stopTimer();
+    document.getElementById('question').style.display = 'none';
+    document.getElementById('endScreen').style.display = 'block';
+    document.getElementById('finalStats').innerHTML = `Final Score: ${score} / ${faces.length}<br>Time: ${timer} seconds`;
+    if (score === faces.length) {
+      document.getElementById('badge').style.display = 'block';
+    }
+    return;
+  }
+
+  do {
+    current = faces[Math.floor(Math.random() * faces.length)];
+  } while (used.includes(current.name));
+  used.push(current.name);
+
+  document.getElementById('quizImage').src = current.img;
+  document.getElementById('feedback').innerText = "";
+
+  const options = shuffle([
+    current.name,
+    ...faces.filter(f => f.name !== current.name).sort(() => 0.5 - Math.random()).slice(0, 3).map(f => f.name)
+  ]);
+
+  const optionContainer = document.getElementById('options');
+  optionContainer.innerHTML = '';
+  options.forEach(name => {
+    const btn = document.createElement('div');
+    btn.className = 'option';
+    btn.innerText = name;
+    btn.onclick = () => checkAnswer(name);
+    optionContainer.appendChild(btn);
+  });
+}
+
+function checkAnswer(selected) {
+  total++;
+  if (selected === current.name) {
+    score++;
+    document.getElementById('feedback').innerText = "✅ Correct!";
+  } else {
+    document.getElementById('feedback').innerText = `❌ Wrong! This is ${current.name}.`;
+  }
+  document.getElementById('score').innerText = `Score: ${score} / ${total}`;
+  setTimeout(showQuestion, 1300);
+}
+
+function shuffle(array) {
+  return array.sort(() => Math.random() - 0.5);
+}
+</script>
+
+</body>
+</html>
