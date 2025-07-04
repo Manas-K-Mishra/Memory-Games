@@ -42,11 +42,21 @@
   <h1>🧠 Welcome to My Memory Games</h1>
   <p>Sharpen your brain with fun, interactive challenges!</p>
 
-  <ul>
-    <li>
-      <a href="Name-Face-Match.html">🎮 Game 1: Name Face Match</a>
-    </li>
-    <!-- Add more games here as we build them -->
-  </ul>
+  <ul id="gameList"></ul>
+
+  <script>
+    const games = [
+      { name: "Game 1: Name-Face Match", file: "Name-Face-Match.html" },
+      { name: "Game 2: Memory Palace Challenge", file: "Memory-Palace-Challenge.html" }
+      // ✅ Just add more games here in the same format!
+    ];
+
+    const ul = document.getElementById("gameList");
+    games.forEach(game => {
+      const li = document.createElement("li");
+      li.innerHTML = `<a href="${game.file}">🎮 ${game.name}</a>`;
+      ul.appendChild(li);
+    });
+  </script>
 </body>
 </html>
