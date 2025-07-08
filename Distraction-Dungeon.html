@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Distraction Dungeon – Dual-Task Memory</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f3f3f3; text-align: center; padding: 40px; }
+    h2 { color: #222; }
+    #content, #distraction, #quiz, #result { display: none; }
+    .item { font-size: 24px; margin: 10px; padding: 8px; background: #fff; border: 1px solid #ccc; border-radius: 8px; }
+    .question { margin: 20px 0; font-weight: bold; }
+    .options button { margin: 5px; padding: 10px 20px; font-size: 16px; border-radius: 6px; cursor: pointer; border: 1px solid #888; }
+    .distraction { font-size: 28px; font-weight: bold; color: red; animation: blink 0.5s infinite; }
+    @keyframes blink { 50% { opacity: 0; } }
+  </style>
+</head>
+<body>
+  <h2>🎮 Game 3: Distraction Dungeon – Dual-Task Memory</h2>
+  <div id="intro">
+    <p>You will see 5 random items for 10 seconds. Memorize them!</p>
+    <button onclick="startGame()">Start Game</button>
+  </div>
+
+  <div id="content"></div>
+  <div id="distraction"><p class="distraction">🚨 System Timeout! Click Something!</p></div>
+  <div id="quiz"></div>
+  <div id="result"></div>
+
+<script>
+const allItems = [
+  "12:45 PM", "Olivia", "📦 Box", "#7142", "Green Triangle",
+  "7:30 AM", "Liam", "🔑 Key", "#9281", "Red Circle"
+];
+
+let selectedItems = [], questions = [], currentQ = 0, score = 0;
+
+const quizElement = document.getElementById("quiz");
+const content = document.getElementById("content");
+const distraction = document.getElementById("distraction");
+const result = document.getElementById("result");
+
+function startGame() {
+  document.getElementById("intro").style.display = "none";
+  content.innerHTML = "";
+  selectedItems = shuffle(allItems).slice(0, 5);
+  selectedItems.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "item";
+    div.innerText = item;
+    content.appendChild(div);
+  });
+  content.style.display = "block";
+  setTimeout(() => {
+    content.style.display = "none";
+    distraction.style.display = "block";
+    setTimeout(() => {
+      distraction.style.display = "none";
+      startQuiz();
+    }, 5000);
+  }, 10000);
+}
+
+function startQuiz() {
+  quizElement.style.display = "block";
+  questions = generateQuestions();
+  showQuestion();
+}
+
+function generateQuestions() {
+  return [
+    {
+      q: "What was the 3rd item?",
+      a: selectedItems[2],
+      options: shuffle([selectedItems[2], ...shuffle(allItems.filter(i => !selectedItems.includes(i))).slice(0, 2)])
+    },
+    {
+      q: "Which item came after " + selectedItems[1] + "?",
+      a: selectedItems[2],
+      options: shuffle([selectedItems[2], selectedItems[3], selectedItems[0]])
+    },
+    {
+      q: "Which of these was shown?",
+      a: selectedItems[4],
+      options: shuffle([selectedItems[4], ...shuffle(allItems.filter(i => !selectedItems.includes(i))).slice(0, 2)])
+    }
+  ];
+}
+
+function showQuestion() {
+  const q = questions[currentQ];
+  quizElement.innerHTML = `<div class="question">${q.q}</div><div class="options">` +
+    q.options.map(opt => `<button onclick="checkAnswer('${opt}')">${opt}</button>`).join("") +
+    `</div>`;
+}
+
+function checkAnswer(ans) {
+  if (ans === questions[currentQ].a) score++;
+  currentQ++;
+  if (currentQ < questions.length) showQuestion();
+  else endGame();
+}
+
+function endGame() {
+  quizElement.style.display = "none";
+  result.style.display = "block";
+  result.innerHTML = `<h3>🧠 You got ${score} out of ${questions.length} correct.</h3><button onclick='location.reload()'>Retry</button>`;
+}
+
+function shuffle(arr) {
+  return [...arr].sort(() => Math.random() - 0.5);
+}
+</script>
+
+</body>
+</html>
