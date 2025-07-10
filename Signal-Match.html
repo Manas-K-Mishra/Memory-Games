@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Signal Match – Intelligence Grid</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #fafafa;
+      padding: 40px;
+      color: #222;
+      text-align: center;
+    }
+    .header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .header img {
+      height: 50px;
+      margin-bottom: 10px;
+    }
+    h2 {
+      margin: 0;
+    }
+    #instructions {
+      max-width: 700px;
+      margin: 0 auto 20px;
+      font-size: 16px;
+    }
+    #grid, #questionArea, #summary {
+      margin-top: 30px;
+    }
+    .grid-table {
+      border-collapse: collapse;
+      margin: 0 auto;
+    }
+    .grid-table td {
+      width: 140px;
+      height: 60px;
+      border: 1px solid #ccc;
+      text-align: center;
+      vertical-align: middle;
+      font-weight: bold;
+      background: #fff;
+    }
+    .btn {
+      margin: 20px 10px;
+      padding: 10px 22px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: 1px solid #aaa;
+      background: #eef;
+      cursor: pointer;
+    }
+    .btn:hover {
+      background: #ddeeff;
+    }
+    #scoreboard {
+      font-size: 16px;
+      margin-top: 20px;
+    }
+    #countdownTimer {
+      font-size: 18px;
+      margin-top: 10px;
+    }
+    .option-btn {
+      padding: 8px 16px;
+      margin: 8px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: 1px solid #999;
+      background: #fff;
+      cursor: pointer;
+    }
+    .option-btn:hover {
+      background: #f0f0f0;
+    }
+    #feedback {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    #startSection {
+      margin-top: 50px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <img src="https://raw.githubusercontent.com/Manas-K-Mishra/Memory-Games/main/Leven-Squad-Logo.jpg" alt="Leven Squad Logo">
+  <h2>Signal Match – Intelligence Grid</h2>
+</div>
+
+<div id="instructions">
+  <p>Memorize the grid carefully, then answer questions based on what you saw.</p>
+</div>
+
+<div id="startSection">
+  <button class="btn" onclick="startRound()">Start Game</button>
+</div>
+
+<div id="scoreboard"></div>
+<div id="countdownTimer"></div>
+<div id="grid"></div>
+<div id="questionArea"></div>
+<div id="summary"></div>
+<button id="nextBtn" class="btn" style="display:none;" onclick="startRound()">Next Grid</button>
+
+<script>
+const colors = ["Red","Green","Blue","Yellow","Orange","Purple"];
+const gridSize = 3;  // changed to 3x3 grid
+let gridData = [], score = 0, total = 0, round = 0;
+
+function generateRandomCode(len=5){
+  const chars="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%&";
+  let s="";
+  for(let i=0;i<len;i++) s+=chars[Math.floor(Math.random()*chars.length)];
+  return s;
+}
+
+function generateGrid(){
+  const g=[];
+  for(let r=0;r<gridSize;r++){
+    const row=[];
+    for(let c=0;c<gridSize;c++){
+      row.push({color: colors[Math.floor(Math.random()*colors.length)], code: generateRandomCode()});
+    }
+    g.push(row);
+  }
+  return g;
+}
+
+function displayGrid(){
+  const tbl=document.createElement("table"); tbl.className="grid-table";
+  gridData.forEach((row,r)=>{
+    const tr=document.createElement("tr");
+    row.forEach((cell,c)=>{
+      const td=document.createElement("td");
+      const id=String.fromCharCode(65+r)+(c+1);
+      td.innerHTML=`<div>${id}</div><div>${cell.color}</div><div>${cell.code}</div>`;
+      tr.appendChild(td);
+    });
+    tbl.appendChild(tr);
+  });
+  document.getElementById("grid").innerHTML="";
+  document.getElementById("grid").appendChild(tbl);
+}
+
+function hideGrid(){ document.getElementById("grid").innerHTML=""; }
+
+function askQuestions(){
+  const qArea=document.getElementById("questionArea"); qArea.innerHTML="";
+  const qs=generateQuestions(); let idx=0, rScore=0;
+  function nextQ(){
+    if(idx>=qs.length){ total+=qs.length; score+=rScore;
+      document.getElementById("summary").innerHTML=
+        `<p>Round ${round} complete. ${rScore} / ${qs.length} correct.</p>`;
+      updateScoreboard();
+      document.getElementById("nextBtn").style.display="inline-block";
+      return;
+    }
+    const q=qs[idx];
+    qArea.innerHTML=`<p>${q.prompt}</p>`;
+    const fb=document.createElement("div"); fb.id="feedback"; qArea.appendChild(fb);
+    q.options.forEach(opt=>{
+      const btn=document.createElement("button"); btn.className="option-btn"; btn.innerText=opt;
+      btn.onclick=()=>{
+        fb.innerText = opt===q.answer ? "Correct." : `Incorrect. Correct: ${q.answer}`;
+        if(opt===q.answer) rScore++;
+        idx++; setTimeout(nextQ,1500);
+      };
+      qArea.appendChild(btn);
+    });
+  }
+  nextQ();
+}
+
+function generateQuestions(){
+  const questions=[], codes=gridData.flat().map(c=>c.code);
+  const cellMap={}; gridData.forEach((row,r)=> row.forEach((c,cc)=> cellMap[c.code]=String.fromCharCode(65+r)+(cc+1)));
+  for(let i=0;i<3;i++){
+    const r=Math.floor(Math.random()*gridSize), cIdx=Math.floor(Math.random()*gridSize);
+    const cell=gridData[r][cIdx], cid=String.fromCharCode(65+r)+(cIdx+1), t=Math.floor(Math.random()*3);
+    if(t===0){ const correct=cell.code, wrong=shuffle(codes.filter(x=>x!==correct)).slice(0,3);
+      questions.push({prompt:`What was the code in cell ${cid}?`,answer:correct,options:shuffle([correct,...wrong])});
+    } else if(t===1){ const correct=cell.color, wrong=shuffle(colors.filter(x=>x!==correct)).slice(0,3);
+      questions.push({prompt:`What was the color in cell ${cid}?`,answer:correct,options:shuffle([correct,...wrong])});
+    } else { const correct=cid, wrong=shuffle(Object.values(cellMap).filter(x=>x!==cid)).slice(0,3);
+      questions.push({prompt:`Which cell had code "${cell.code}"?`,answer:correct,options:shuffle([correct,...wrong])}); }
+  }
+  return questions;
+}
+
+function shuffle(a){ return [...a].sort(()=>0.5-Math.random()); }
+
+function updateScoreboard(){
+  document.getElementById("scoreboard").innerText=
+    `Rounds played: ${round} | Total Score: ${score} / ${total}`;
+}
+
+function startRound(){
+  document.getElementById("nextBtn").style.display="none";
+  document.getElementById("summary").innerHTML="";
+  document.getElementById("questionArea").innerHTML="";
+  document.getElementById("startSection").style.display="none";
+  document.getElementById("countdownTimer").innerText="";
+  gridData=generateGrid(); round++; updateScoreboard(); displayGrid();
+  let tl=40; document.getElementById("countdownTimer").innerText=`Memorize Time: ${tl}s`;
+  const cd=setInterval(()=>{ tl--; document.getElementById("countdownTimer").innerText=`Memorize Time: ${tl}s`;
+    if(tl<=0){ clearInterval(cd); document.getElementById("countdownTimer").innerText="";} },1000);
+  setTimeout(()=>{ hideGrid(); askQuestions(); },40000);
+}
+</script>
+
+</body>
+</html>
