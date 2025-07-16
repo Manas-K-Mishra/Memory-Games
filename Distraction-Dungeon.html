@@ -103,7 +103,7 @@ function checkAnswer(ans) {
 function endGame() {
   quizElement.style.display = "none";
   result.style.display = "block";
-  result.innerHTML = `<h3>🧠 You got ${score} out of ${questions.length} correct.</h3><button onclick='location.reload()'>Retry</button>`;
+  result.innerHTML = `<h3> You got ${score} out of ${questions.length} correct.</h3><button onclick='location.reload()'>Retry</button>`;
 }
 
 function shuffle(arr) {
